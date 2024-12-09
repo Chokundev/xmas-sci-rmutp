@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข้อมูลการลงทะเบียน Xmas-Sci-RMUTP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.js"></script>
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 py-10">
+    <div class="container mx-auto px-4">
+        <center>
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">ข้อมูลการลงทะเบียน Xmas-Sci-RMUTP</h1>
+        </center>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="overflow-x-auto">
+                <table id="registrationTable" class="min-w-full border-collapse border border-gray-200 display">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                            <th>#</th>
+                            <th>ชื่อ - นามสกุล</th>
+                            <th>สาขาที่เรียน</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-700 text-sm">
+                        <!-- Data will be populated here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBskXtybhc67-hAXjQYcsXojF8btsGKY8M",
+            authDomain: "xmas-sci-rmutp-register.firebaseapp.com",
+            projectId: "xmas-sci-rmutp-register",
+            storageBucket: "xmas-sci-rmutp-register.appspot.com",
+            messagingSenderId: "379187167144",
+            appId: "1:379187167144:web:ac8df710a03cd36c54e79d",
+            measurementId: "G-E2932MCZG5"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Initialize DataTable
+            const dataTable = $("#registrationTable").DataTable();
+
+            const fetchData = async () => {
+                try {
+                    // Fetch data from Firestore
+                    const querySnapshot = await getDocs(collection(db, "registrations"));
+
+                    // Clear existing table data
+                    dataTable.clear();
+
+                    let index = 0;
+                    const rows = [];
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        index++;
+
+                        // Add data to rows array
+                        rows.push([index, data.fullname, data.major]);
+                    });
+
+                    // Add new rows and redraw table
+                    dataTable.rows.add(rows).draw();
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                }
+            };
+
+            // Fetch data initially and then every second
+            fetchData();
+            setInterval(fetchData, 1000);
+        });
+    </script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</body>
+</html>
