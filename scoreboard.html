@@ -61,26 +61,30 @@
                     majorScores[score.major] += score.score;
                 });
 
+                // Sort majors by total score in descending order
+                const sortedMajorScores = Object.entries(majorScores).sort((a, b) => b[1] - a[1]);
+
                 // Display total scores by major
                 const majorScoreTable = document.getElementById('majorScores');
                 majorScoreTable.innerHTML = ""; // Clear existing data
-                for (const [major, totalScore] of Object.entries(majorScores)) {
+                sortedMajorScores.forEach(([major, totalScore]) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${major}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${totalScore}</td>
                     `;
                     majorScoreTable.appendChild(row);
-                }
+                });
             } catch (error) {
                 console.error("Error fetching scores: ", error);
                 Swal.fire('ผิดพลาด!', 'ไม่สามารถดึงข้อมูลคะแนนได้', 'error');
             }
         }
 
-        // Wait for DOM content to be loaded before fetching the scores
+        // Fetch scores when page loads
         document.addEventListener("DOMContentLoaded", () => {
             fetchScores(); // Fetch scores on page load
+            setInterval(fetchScores, 5000); // Refresh scores every 5 seconds
         });
     </script>
 
