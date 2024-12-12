@@ -17,13 +17,60 @@
         canvas {
             touch-action: none;
         }
-    </style>
-    <!-- Firebase -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // Firebase configuration
+        .title {
+            color: #e63946;
+            font-family: 'Cookie', cursive;
+        }
+    </style>
+</head>
+
+<body class="bg-cover bg-center min-h-screen flex flex-col justify-center items-center bg-[url('/image/snowy.png')]">
+    <div class="w-full max-w-md p-4 bg-white/90 shadow-md rounded-lg">
+        <h1 class="title text-4xl font-bold text-center mb-6">🎄XmasSciRMUTP🎄</h1>
+        <h3 class="title text-xs font-bold text-center mb-6">Santa’s Gift Delivery Game</h3>
+        <form id="playerForm" class="flex flex-col items-center mb-4">
+            <input type="text" id="playerName" placeholder="กรอกชื่อของคุณ"
+                class="w-full mb-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required />
+            <select id="playerBranch" required
+                class="w-full mb-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="" disabled selected>เลือกสาขาของคุณ</option>
+                <option value="วิทยาการคอมพิวเตอร์">วิทยาการคอมพิวเตอร์</option>
+                <option value="เทคโนโลยีสิ่งแวดล้อม">เทคโนโลยีสิ่งแวดล้อม</option>
+                <option value="วัสดุศาสตร์อุตสาหกรรม">วัสดุศาสตร์อุตสาหกรรม</option>
+                <option value="วิทยาการข้อมูล">วิทยาการข้อมูล</option>
+                <option value="เทคโนโลยีสุขภาพ เครื่องสำอาง">เทคโนโลยีสุขภาพ เครื่องสำอาง</option>
+                <option value="สถิติสารสนเทศ">สถิติสารสนเทศ</option>
+            </select>
+            <button type="button" id="startGameButton"
+                class="w-full py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600">เริ่มเกม</button>
+        </form>
+
+        <center>
+            <canvas id="gameCanvas" width="320" height="480"
+                class="border-2 border-gray-400 rounded-md shadow-md"></canvas>
+        </center>
+
+        <div id="scoreBoard" class="hidden mt-4 text-lg text-gray-800">
+            คะแนน: <span id="score">0</span>
+        </div>
+        <div id="timer" class="hidden mt-2 text-lg text-red-600">เวลา: 60</div>
+
+        <!-- New buttons to navigate -->
+        <div id="gameControls" class=" mt-4 flex justify-around">
+            <button id="goToMainButton" class="py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600">กลับไปที่หน้าหลัก</button>
+            <button id="goToScoreboardButton" class="py-2 px-4 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">ไปที่สกอร์บอร์ด</button>
+        </div>
+    </div>
+
+    <footer>2024 &copy พัฒนาโดย : ธีรชานนท์ พวงเงิน </footer>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getFirestore, addDoc, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBskXtybhc67-hAXjQYcsXojF8btsGKY8M",
             authDomain: "xmas-sci-rmutp-register.firebaseapp.com",
@@ -38,39 +85,14 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-    </script>
-</head>
 
-<body class="bg-cover bg-center min-h-screen flex flex-col justify-center items-center bg-[url('/image/snowy.png')]">
-    <div class="w-full max-w-md p-4 bg-white/90 shadow-md rounded-lg">
-        <form id="playerForm" class="flex flex-col items-center mb-4">
-            <input type="text" id="playerName" placeholder="กรอกชื่อของคุณ"
-                class="w-full mb-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                required />
-            <select id="playerBranch" required
-                class="w-full mb-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <option value="" disabled selected>เลือกสาขาของคุณ</option>
-                <option value="computer-science">วิทยาการคอมพิวเตอร์</option>
-                <option value="information-tech">เทคโนโลยีสารสนเทศ</option>
-                <option value="biology">ชีววิทยา</option>
-            </select>
-            <button type="button" id="startGameButton"
-                class="w-full py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600">เริ่มเกม</button>
-        </form>
-        <canvas id="gameCanvas" width="320" height="480" class="border-2 border-gray-400 rounded-md shadow-md"></canvas>
-        <div id="scoreBoard" class="hidden mt-4 text-lg text-gray-800">
-            คะแนน: <span id="score">0</span>
-        </div>
-        <div id="timer" class="hidden mt-2 text-lg text-red-600">เวลา: 60</div>
-    </div>
-
-    <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const playerForm = document.getElementById("playerForm");
         const scoreBoard = document.getElementById("scoreBoard");
         const scoreSpan = document.getElementById("score");
         const timerDisplay = document.getElementById("timer");
+        const gameControls = document.getElementById("gameControls");
 
         let santaX = canvas.width / 2 - 25;
         let santaWidth = 50;
@@ -196,19 +218,24 @@
         }
 
         // Save score to Firestore
-        function saveScoreToFirestore() {
-            addDoc(collection(db, "game_scores"), {
-                name: playerName,
-                branch: playerBranch,
-                score: score,
-                date: new Date(),
-            })
-                .then(() => {
-                    console.log("คะแนนบันทึกสำเร็จ");
-                })
-                .catch((error) => {
-                    console.error("เกิดข้อผิดพลาดในการบันทึกคะแนน:", error);
+        async function saveScoreToFirestore() {
+            const fullname = playerName;
+            const major = playerBranch;
+
+            try {
+                // Save score to Firestore
+                await addDoc(collection(db, "game_scores"), {
+                    fullname: fullname,
+                    major: major,
+                    score: score,
+                    timestamp: new Date()
                 });
+
+                Swal.fire('สำเร็จ!', 'บันทึกคะแนนสำเร็จ!', 'success');
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                Swal.fire('ผิดพลาด!', 'ไม่สามารถบันทึกคะแนนได้', 'error');
+            }
         }
 
         // Start countdown timer
@@ -227,6 +254,16 @@
         document.addEventListener("DOMContentLoaded", () => {
             const startButton = document.getElementById("startGameButton");
             startButton.addEventListener("click", startGame);
+
+            const goToMainButton = document.getElementById("goToMainButton");
+            goToMainButton.addEventListener("click", () => {
+                window.location.reload(); // Reload to go back to the main page
+            });
+
+            const goToScoreboardButton = document.getElementById("goToScoreboardButton");
+            goToScoreboardButton.addEventListener("click", () => {
+                window.location.href = "/scoreboard"; // Navigate to the scoreboard page
+            });
         });
     </script>
 </body>

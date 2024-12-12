@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard - Santa’s Gift Delivery</title>
+
+    <!-- Google Fonts for Noto Sans Thai -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBskXtybhc67-hAXjQYcsXojF8btsGKY8M",
+            authDomain: "xmas-sci-rmutp-register.firebaseapp.com",
+            databaseURL: "https://xmas-sci-rmutp-register-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "xmas-sci-rmutp-register",
+            storageBucket: "xmas-sci-rmutp-register.firebasestorage.app",
+            messagingSenderId: "379187167144",
+            appId: "1:379187167144:web:c4f0b4e4ce6dba6d54e79d",
+            measurementId: "G-X9NHWE3WKE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function fetchScores() {
+            try {
+                // Get top 10 highest scores
+                const scoreQuery = query(collection(db, "game_scores"), orderBy("score", "desc"), limit(10));
+                const scoreSnapshot = await getDocs(scoreQuery);
+                const topScores = scoreSnapshot.docs.map(doc => doc.data());
+
+                // Display top 10 players
+                const leaderboard = document.getElementById('leaderboard');
+                leaderboard.innerHTML = ""; // Clear existing data
+                topScores.forEach((score, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.fullname}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.major}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.score}</td>
+                    `;
+                    leaderboard.appendChild(row);
+                });
+
+                // Calculate total scores by major
+                const majorScores = {};
+                topScores.forEach(score => {
+                    if (!majorScores[score.major]) {
+                        majorScores[score.major] = 0;
+                    }
+                    majorScores[score.major] += score.score;
+                });
+
+                // Display total scores by major
+                const majorScoreTable = document.getElementById('majorScores');
+                majorScoreTable.innerHTML = ""; // Clear existing data
+                for (const [major, totalScore] of Object.entries(majorScores)) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${major}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${totalScore}</td>
+                    `;
+                    majorScoreTable.appendChild(row);
+                }
+            } catch (error) {
+                console.error("Error fetching scores: ", error);
+                Swal.fire('ผิดพลาด!', 'ไม่สามารถดึงข้อมูลคะแนนได้', 'error');
+            }
+        }
+
+        // Wait for DOM content to be loaded before fetching the scores
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchScores(); // Fetch scores on page load
+        });
+    </script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col items-center">
+    <div class="w-full max-w-4xl p-6 bg-white shadow-md rounded-lg mt-8">
+        <h1 class="text-4xl font-bold text-center text-blue-500 mb-6">🎄 Santa’s Gift Delivery - Scoreboard 🎄</h1>
+
+        <!-- Top 10 Players -->
+        <h2 class="text-2xl font-semibold mb-4">อันดับคะแนนผู้เล่น</h2>
+        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">#</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">ชื่อ</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">สาขา</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">คะแนน</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard">
+                <!-- Top 10 players will be populated here -->
+            </tbody>
+        </table>
+
+        <!-- Scores by Major -->
+        <h2 class="text-2xl font-semibold mt-8 mb-4">อันดับคะแนนรวมสาขา</h2>
+        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">สาขา</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">คะแนนรวม</th>
+                </tr>
+            </thead>
+            <tbody id="majorScores">
+                <!-- Total scores by major will be populated here -->
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
