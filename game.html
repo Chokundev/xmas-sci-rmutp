@@ -72,7 +72,6 @@
     let score = 0;
     let gameRunning = false;
     let branch = "";
-    let touchStartX = 0;
 
     // โหลดรูปซานต้า
     const santaImg = new Image();
@@ -151,16 +150,10 @@
     }
 
     // ควบคุมซานต้าด้วยการแตะหน้าจอ
-    canvas.addEventListener("touchstart", (e) => {
-      touchStartX = e.touches[0].clientX;
-    });
-
     canvas.addEventListener("touchmove", (e) => {
-      const touchX = e.touches[0].clientX;
-      const deltaX = touchX - touchStartX;
-      santaX += deltaX * 0.1; // ความเร็วของการเลื่อน
+      const touchX = e.touches[0].clientX - canvas.offsetLeft;
+      santaX = touchX - santaWidth / 2;
       santaX = Math.max(0, Math.min(canvas.width - santaWidth, santaX)); // ป้องกันซานต้าออกนอกจอ
-      touchStartX = touchX;
     });
 
     // จบเกม
