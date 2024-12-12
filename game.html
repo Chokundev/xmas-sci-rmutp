@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Santa’s Gift Delivery</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap');
 
@@ -30,15 +31,14 @@
             projectId: "xmas-sci-rmutp-register",
             storageBucket: "xmas-sci-rmutp-register.firebasestorage.app",
             messagingSenderId: "379187167144",
-            appId: "1:379187167144:web:ac8df710a03cd36c54e79d",
-            measurementId: "G-E2932MCZG5"
+            appId: "1:379187167144:web:c4f0b4e4ce6dba6d54e79d",
+            measurementId: "G-X9NHWE3WKE"
         };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
     </script>
-
 </head>
 
 <body class="bg-cover bg-center min-h-screen flex flex-col justify-center items-center bg-[url('/image/snowy.png')]">
@@ -61,6 +61,7 @@
         <div id="scoreBoard" class="hidden mt-4 text-lg text-gray-800">
             คะแนน: <span id="score">0</span>
         </div>
+        <div id="timer" class="hidden mt-2 text-lg text-red-600">เวลา: 60</div>
     </div>
 
     <script>
@@ -69,6 +70,7 @@
         const playerForm = document.getElementById("playerForm");
         const scoreBoard = document.getElementById("scoreBoard");
         const scoreSpan = document.getElementById("score");
+        const timerDisplay = document.getElementById("timer");
 
         let santaX = canvas.width / 2 - 25;
         let santaWidth = 50;
@@ -78,6 +80,8 @@
         let gameRunning = false;
         let playerName = "";
         let playerBranch = "";
+        let countdownTime = 60;
+        let countdownInterval;
 
         // Images
         const santaImg = new Image();
@@ -101,8 +105,10 @@
 
             playerForm.classList.add("hidden");
             scoreBoard.classList.remove("hidden");
+            timerDisplay.classList.remove("hidden");
             gameRunning = true;
             generateGifts();
+            startTimer();
             gameLoop();
         }
 
@@ -179,10 +185,17 @@
         // End game
         function endGame() {
             gameRunning = false;
-            alert(`เกมจบ! คุณได้คะแนน: ${score}`);
+            clearInterval(countdownInterval);
+            Swal.fire({
+                title: 'เกมจบ!',
+                text: `คุณได้คะแนน: ${score}`,
+                icon: 'success',
+                confirmButtonText: 'ตกลง'
+            });
             saveScoreToFirestore();
         }
 
+        // Save score to Firestore
         function saveScoreToFirestore() {
             addDoc(collection(db, "game_scores"), {
                 name: playerName,
@@ -198,11 +211,17 @@
                 });
         }
 
-
-        // Auto end game after 1 minute
-        setTimeout(() => {
-            endGame();
-        }, 60000);
+        // Start countdown timer
+        function startTimer() {
+            timerDisplay.textContent = `เวลา: ${countdownTime}`;
+            countdownInterval = setInterval(() => {
+                countdownTime--;
+                timerDisplay.textContent = `เวลา: ${countdownTime}`;
+                if (countdownTime <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
 
         // Wait for DOM content to be loaded before attaching event
         document.addEventListener("DOMContentLoaded", () => {
