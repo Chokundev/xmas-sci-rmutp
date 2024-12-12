@@ -9,7 +9,7 @@
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
-      background: url('snow_background.jpg') no-repeat center center fixed;
+      background: url('/image/snowy.png') no-repeat center center fixed;
       background-size: cover;
       display: flex;
       flex-direction: column;
@@ -19,6 +19,7 @@
     }
     #gameCanvas {
       border: 2px solid white;
+      touch-action: none;
     }
     #gameContainer {
       display: flex;
@@ -65,10 +66,17 @@
     const scoreSpan = document.getElementById("score");
 
     let santaX = canvas.width / 2 - 25;
+    let santaWidth = 50;
+    let santaHeight = 50;
     let gifts = [];
     let score = 0;
     let gameRunning = false;
     let branch = "";
+    let touchStartX = 0;
+
+    // โหลดรูปซานต้า
+    const santaImg = new Image();
+    santaImg.src = '/image/santa.svg'; // ใส่ URL ของรูปภาพซานต้า
 
     // เริ่มเกม
     function startGame() {
@@ -93,8 +101,7 @@
 
     // วาดซานต้า
     function drawSanta() {
-      ctx.fillStyle = "red";
-      ctx.fillRect(santaX, canvas.height - 50, 50, 50);
+      ctx.drawImage(santaImg, santaX, canvas.height - santaHeight, santaWidth, santaHeight);
     }
 
     // วาดของขวัญ
@@ -112,9 +119,9 @@
 
         // ตรวจจับการชนกับซานต้า
         if (
-          gift.y + 20 >= canvas.height - 50 &&
+          gift.y + 20 >= canvas.height - santaHeight &&
           gift.x + 20 > santaX &&
-          gift.x < santaX + 50
+          gift.x < santaX + santaWidth
         ) {
           score++;
           gift.y = -Math.random() * 300;
@@ -143,38 +150,23 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // ควบคุมซานต้า
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft" && santaX > 0) santaX -= 10;
-      if (e.key === "ArrowRight" && santaX < canvas.width - 50) santaX += 10;
+    // ควบคุมซานต้าด้วยการแตะหน้าจอ
+    canvas.addEventListener("touchstart", (e) => {
+      touchStartX = e.touches[0].clientX;
     });
 
-    // บันทึกคะแนน
-    async function saveScore() {
-      const response = await fetch("https://your-api-url.com/save-score", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          branch,
-          score,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-      if (response.ok) {
-        alert("บันทึกคะแนนสำเร็จ!");
-      } else {
-        alert("เกิดข้อผิดพลาดในการบันทึกคะแนน");
-      }
-    }
+    canvas.addEventListener("touchmove", (e) => {
+      const touchX = e.touches[0].clientX;
+      const deltaX = touchX - touchStartX;
+      santaX += deltaX * 0.1; // ความเร็วของการเลื่อน
+      santaX = Math.max(0, Math.min(canvas.width - santaWidth, santaX)); // ป้องกันซานต้าออกนอกจอ
+      touchStartX = touchX;
+    });
 
     // จบเกม
     setTimeout(() => {
       gameRunning = false;
       alert(`เกมจบ! คุณได้คะแนน: ${score}`);
-      saveScore();
-      location.reload();
     }, 60000); // 1 นาที
   </script>
 </body>
