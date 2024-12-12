@@ -1,166 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Santa’s Gift Delivery</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: url('/image/snowy.png') no-repeat center center fixed;
-      background-size: cover;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    #gameCanvas {
-      border: 2px solid white;
-      touch-action: none;
-    }
-    #gameContainer {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    #branchSelector {
-      margin-bottom: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #e63939;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Santa’s Gift Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+
+        canvas {
+            touch-action: none;
+        }
+    </style>
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBskXtybhc67-hAXjQYcsXojF8btsGKY8M",
+            authDomain: "xmas-sci-rmutp-register.firebaseapp.com",
+            databaseURL: "https://xmas-sci-rmutp-register-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "xmas-sci-rmutp-register",
+            storageBucket: "xmas-sci-rmutp-register.firebasestorage.app",
+            messagingSenderId: "379187167144",
+            appId: "1:379187167144:web:ac8df710a03cd36c54e79d",
+            measurementId: "G-E2932MCZG5"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+    </script>
+
 </head>
-<body>
-  <div id="gameContainer">
-    <div id="branchSelector">
-      <label for="branch">เลือกสาขาของคุณ:</label>
-      <select id="branch">
-        <option value="computer-science">วิทยาการคอมพิวเตอร์</option>
-        <option value="information-tech">เทคโนโลยีสารสนเทศ</option>
-        <option value="biology">ชีววิทยา</option>
-      </select>
-      <button onclick="startGame()">เริ่มเกม</button>
+
+<body class="bg-cover bg-center min-h-screen flex flex-col justify-center items-center bg-[url('/image/snowy.png')]">
+    <div class="w-full max-w-md p-4 bg-white/90 shadow-md rounded-lg">
+        <form id="playerForm" class="flex flex-col items-center mb-4">
+            <input type="text" id="playerName" placeholder="กรอกชื่อของคุณ"
+                class="w-full mb-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required />
+            <select id="playerBranch" required
+                class="w-full mb-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="" disabled selected>เลือกสาขาของคุณ</option>
+                <option value="computer-science">วิทยาการคอมพิวเตอร์</option>
+                <option value="information-tech">เทคโนโลยีสารสนเทศ</option>
+                <option value="biology">ชีววิทยา</option>
+            </select>
+            <button type="button" id="startGameButton"
+                class="w-full py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600">เริ่มเกม</button>
+        </form>
+        <canvas id="gameCanvas" width="320" height="480" class="border-2 border-gray-400 rounded-md shadow-md"></canvas>
+        <div id="scoreBoard" class="hidden mt-4 text-lg text-gray-800">
+            คะแนน: <span id="score">0</span>
+        </div>
     </div>
-    <canvas id="gameCanvas" width="320" height="480"></canvas>
-    <div id="scoreBoard" style="display: none;">คะแนน: <span id="score">0</span></div>
-  </div>
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const branchSelector = document.getElementById("branchSelector");
-    const scoreBoard = document.getElementById("scoreBoard");
-    const scoreSpan = document.getElementById("score");
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const playerForm = document.getElementById("playerForm");
+        const scoreBoard = document.getElementById("scoreBoard");
+        const scoreSpan = document.getElementById("score");
 
-    let santaX = canvas.width / 2 - 25;
-    let santaWidth = 50;
-    let santaHeight = 50;
-    let gifts = [];
-    let score = 0;
-    let gameRunning = false;
-    let branch = "";
+        let santaX = canvas.width / 2 - 25;
+        let santaWidth = 50;
+        let santaHeight = 50;
+        let gifts = [];
+        let score = 0;
+        let gameRunning = false;
+        let playerName = "";
+        let playerBranch = "";
 
-    // โหลดรูปซานต้า
-    const santaImg = new Image();
-    santaImg.src = '/image/santa.svg'; // ใส่ URL ของรูปภาพซานต้า
-
-    // เริ่มเกม
-    function startGame() {
-      branch = document.getElementById("branch").value;
-      branchSelector.style.display = "none";
-      scoreBoard.style.display = "block";
-      gameRunning = true;
-      generateGifts();
-      gameLoop();
-    }
-
-    // สร้างของขวัญ
-    function generateGifts() {
-      for (let i = 0; i < 5; i++) {
-        gifts.push({
-          x: Math.random() * (canvas.width - 20),
-          y: -Math.random() * 300,
-          speed: 2 + Math.random() * 3,
+        // Images
+        const santaImg = new Image();
+        santaImg.src = "/image/santa.svg"; // Santa image
+        const giftImages = ["/image/gift1.svg", "/image/gift2.svg", "/image/gift3.svg"]; // Gift images
+        const loadedGifts = giftImages.map((src) => {
+            const img = new Image();
+            img.src = src;
+            return img;
         });
-      }
-    }
 
-    // วาดซานต้า
-    function drawSanta() {
-      ctx.drawImage(santaImg, santaX, canvas.height - santaHeight, santaWidth, santaHeight);
-    }
+        // Start game
+        function startGame() {
+            playerName = document.getElementById("playerName").value.trim();
+            playerBranch = document.getElementById("playerBranch").value;
 
-    // วาดของขวัญ
-    function drawGifts() {
-      ctx.fillStyle = "green";
-      gifts.forEach((gift) => {
-        ctx.fillRect(gift.x, gift.y, 20, 20);
-      });
-    }
+            if (!playerName || !playerBranch) {
+                alert("กรุณากรอกชื่อและเลือกสาขา");
+                return;
+            }
 
-    // อัปเดตตำแหน่งของขวัญ
-    function updateGifts() {
-      gifts.forEach((gift) => {
-        gift.y += gift.speed;
-
-        // ตรวจจับการชนกับซานต้า
-        if (
-          gift.y + 20 >= canvas.height - santaHeight &&
-          gift.x + 20 > santaX &&
-          gift.x < santaX + santaWidth
-        ) {
-          score++;
-          gift.y = -Math.random() * 300;
-          gift.x = Math.random() * (canvas.width - 20);
+            playerForm.classList.add("hidden");
+            scoreBoard.classList.remove("hidden");
+            gameRunning = true;
+            generateGifts();
+            gameLoop();
         }
 
-        // รีเซ็ตของขวัญเมื่อหลุดจอ
-        if (gift.y > canvas.height) {
-          gift.y = -Math.random() * 300;
-          gift.x = Math.random() * (canvas.width - 20);
+        // Create gifts
+        function generateGifts() {
+            for (let i = 0; i < 5; i++) {
+                gifts.push({
+                    x: Math.random() * (canvas.width - 20),
+                    y: -Math.random() * 300,
+                    speed: 2 + Math.random() * 3,
+                    img: loadedGifts[Math.floor(Math.random() * loadedGifts.length)], // Random image
+                });
+            }
         }
-      });
-    }
 
-    // Game loop
-    function gameLoop() {
-      if (!gameRunning) return;
+        // Draw Santa
+        function drawSanta() {
+            ctx.drawImage(santaImg, santaX, canvas.height - santaHeight, santaWidth, santaHeight);
+        }
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw gifts
+        function drawGifts() {
+            gifts.forEach((gift) => {
+                ctx.drawImage(gift.img, gift.x, gift.y, 20, 20);
+            });
+        }
 
-      drawSanta();
-      drawGifts();
-      updateGifts();
-      scoreSpan.textContent = score;
+        // Update gifts
+        function updateGifts() {
+            gifts.forEach((gift) => {
+                gift.y += gift.speed;
 
-      requestAnimationFrame(gameLoop);
-    }
+                // Collision detection
+                if (
+                    gift.y + 20 >= canvas.height - santaHeight &&
+                    gift.x + 20 > santaX &&
+                    gift.x < santaX + santaWidth
+                ) {
+                    score++;
+                    gift.y = -Math.random() * 300;
+                    gift.x = Math.random() * (canvas.width - 20);
+                    gift.img = loadedGifts[Math.floor(Math.random() * loadedGifts.length)]; // Randomize image
+                }
 
-    // ควบคุมซานต้าด้วยการแตะหน้าจอ
-    canvas.addEventListener("touchmove", (e) => {
-      const touchX = e.touches[0].clientX - canvas.offsetLeft;
-      santaX = touchX - santaWidth / 2;
-      santaX = Math.max(0, Math.min(canvas.width - santaWidth, santaX)); // ป้องกันซานต้าออกนอกจอ
-    });
+                // Reset gift if out of bounds
+                if (gift.y > canvas.height) {
+                    gift.y = -Math.random() * 300;
+                    gift.x = Math.random() * (canvas.width - 20);
+                }
+            });
+        }
 
-    // จบเกม
-    setTimeout(() => {
-      gameRunning = false;
-      alert(`เกมจบ! คุณได้คะแนน: ${score}`);
-    }, 60000); // 1 นาที
-  </script>
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawSanta();
+            drawGifts();
+            updateGifts();
+            scoreSpan.textContent = score;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Touch controls
+        canvas.addEventListener("touchmove", (e) => {
+            const touchX = e.touches[0].clientX - canvas.offsetLeft;
+            santaX = touchX - santaWidth / 2;
+            santaX = Math.max(0, Math.min(canvas.width - santaWidth, santaX));
+        });
+
+        // End game
+        function endGame() {
+            gameRunning = false;
+            alert(`เกมจบ! คุณได้คะแนน: ${score}`);
+            saveScoreToFirestore();
+        }
+
+        function saveScoreToFirestore() {
+            addDoc(collection(db, "game_scores"), {
+                name: playerName,
+                branch: playerBranch,
+                score: score,
+                date: new Date(),
+            })
+                .then(() => {
+                    console.log("คะแนนบันทึกสำเร็จ");
+                })
+                .catch((error) => {
+                    console.error("เกิดข้อผิดพลาดในการบันทึกคะแนน:", error);
+                });
+        }
+
+
+        // Auto end game after 1 minute
+        setTimeout(() => {
+            endGame();
+        }, 60000);
+
+        // Wait for DOM content to be loaded before attaching event
+        document.addEventListener("DOMContentLoaded", () => {
+            const startButton = document.getElementById("startGameButton");
+            startButton.addEventListener("click", startGame);
+        });
+    </script>
 </body>
+
 </html>
