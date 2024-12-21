@@ -44,7 +44,7 @@
                 border-radius: 8px;
             }
 
-            body > * {
+            body>* {
                 display: none;
             }
         }
@@ -93,8 +93,10 @@
         </div>
 
         <div id="gameControls" class="hidden mt-4 flex justify-around">
-            <button id="resetGameButton" class="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600">เริ่มใหม่</button>
-            <button id="goToScoreboardButton" class="py-2 px-4 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">ไปที่สกอร์บอร์ด</button>
+            <button id="resetGameButton"
+                class="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600">เริ่มใหม่</button>
+            <button id="goToScoreboardButton"
+                class="py-2 px-4 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">ไปที่สกอร์บอร์ด</button>
         </div>
     </div>
 
@@ -103,7 +105,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
         import { getFirestore, addDoc, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-    
+
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBskXtybhc67-hAXjQYcsXojF8btsGKY8M",
@@ -115,17 +117,17 @@
             appId: "1:379187167144:web:c4f0b4e4ce6dba6d54e79d",
             measurementId: "G-X9NHWE3WKE"
         };
-    
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-    
+
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const playerForm = document.getElementById("playerForm");
         const scoreBoard = document.getElementById("scoreBoard");
         const scoreSpan = document.getElementById("score");
         const gameControls = document.getElementById("gameControls");
-    
+
         let santaX = canvas.width / 2 - 25;
         let santaWidth = 50;
         let santaHeight = 50;
@@ -136,7 +138,7 @@
         let gameStartTime = null;
         let playerName = "";
         let playerBranch = "";
-    
+
         const santaImg = new Image();
         santaImg.src = "/image/santa.svg";
         const giftImages = ["/image/gift1.svg", "/image/gift2.svg", "/image/gift3.svg"];
@@ -147,7 +149,7 @@
         });
         const obstacleImg = new Image();
         obstacleImg.src = "/image/obstacle.svg";
-    
+
         function showGameInstructions() {
             Swal.fire({
                 title: 'วิธีเล่นเกม',
@@ -160,28 +162,28 @@
                 }
             });
         }
-    
+
         function startGame() {
             playerName = document.getElementById("playerName").value.trim();
             playerBranch = document.getElementById("playerBranch").value;
-    
+
             if (!playerName || !playerBranch) {
                 Swal.fire('กรุณากรอกข้อมูล', 'กรุณากรอกชื่อและเลือกสาขา', 'warning');
                 return;
             }
-    
+
             playerForm.classList.add("hidden");
             scoreBoard.classList.remove("hidden");
             gameControls.classList.remove("hidden");
-    
+
             gameRunning = true;
             gameStartTime = new Date();
-    
+
             generateGifts();
             generateObstacles();
             gameLoop();
         }
-    
+
         function generateGifts() {
             gifts = Array.from({ length: 7 }, () => ({
                 x: Math.random() * (canvas.width - 20),
@@ -190,7 +192,7 @@
                 img: loadedGifts[Math.floor(Math.random() * loadedGifts.length)]
             }));
         }
-    
+
         function generateObstacles() {
             obstacles = Array.from({ length: 3 }, () => ({
                 x: Math.random() * (canvas.width - 30),
@@ -198,23 +200,23 @@
                 speed: 3 + Math.random() * 2
             }));
         }
-    
+
         function drawSanta() {
             ctx.drawImage(santaImg, santaX, canvas.height - santaHeight, santaWidth, santaHeight);
         }
-    
+
         function drawGifts() {
             gifts.forEach((gift) => {
                 ctx.drawImage(gift.img, gift.x, gift.y, 20, 20);
             });
         }
-    
+
         function drawObstacles() {
             obstacles.forEach((obstacle) => {
                 ctx.drawImage(obstacleImg, obstacle.x, obstacle.y, 30, 30);
             });
         }
-    
+
         function updateGifts() {
             gifts.forEach((gift) => {
                 gift.y += gift.speed;
@@ -235,7 +237,7 @@
                 }
             });
         }
-    
+
         function updateObstacles() {
             obstacles.forEach((obstacle) => {
                 obstacle.y += obstacle.speed;
@@ -253,11 +255,11 @@
                 }
             });
         }
-    
+
         function endGame() {
             gameRunning = false;
             const gameTime = Math.floor((new Date() - gameStartTime) / 1000);
-    
+
             Swal.fire({
                 title: 'เกมจบแล้ว!',
                 text: `คุณได้คะแนน: ${score}\nเวลาที่เล่น: ${gameTime} วินาที`,
@@ -268,7 +270,7 @@
                 resetGame();
             });
         }
-    
+
         function saveScore(gameTime) {
             return addDoc(collection(db, 'game_scores'), {
                 fullname: playerName,
@@ -281,7 +283,7 @@
                 Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกคะแนนได้', 'error');
             });
         }
-    
+
         function resetGame() {
             santaX = canvas.width / 2 - 25;
             gifts = [];
@@ -292,20 +294,20 @@
             scoreBoard.classList.add("hidden");
             gameControls.classList.add("hidden");
         }
-    
+
         function gameLoop() {
             if (!gameRunning) return;
-    
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawSanta();
             drawGifts();
             drawObstacles();
             updateGifts();
             updateObstacles();
-    
+
             requestAnimationFrame(gameLoop);
         }
-    
+
         canvas.addEventListener("touchmove", (event) => {
             if (event.touches.length > 0) {
                 const touch = event.touches[0];
@@ -315,15 +317,16 @@
                 if (santaX + santaWidth > canvas.width) santaX = canvas.width - santaWidth;
             }
         });
-    
+
         document.getElementById("startGameButton").addEventListener("click", showGameInstructions);
-    
+
         document.getElementById("resetGameButton").addEventListener("click", resetGame);
-    
+
         document.getElementById("goToScoreboardButton").addEventListener("click", () => {
             window.location.href = "/scoreboard.html";
         });
     </script>
-    
+
 </body>
+
 </html>
