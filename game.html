@@ -25,6 +25,29 @@
             color: #e63946;
             font-family: 'Cookie', cursive;
         }
+
+        @media (min-width: 768px) {
+            body::before {
+                content: 'เล่นเกมนี้ได้เฉพาะบนมือถือ';
+                display: block;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 1.5rem;
+                color: red;
+                text-align: center;
+                z-index: 1000;
+                background: white;
+                padding: 1rem;
+                border: 2px solid red;
+                border-radius: 8px;
+            }
+
+            body > * {
+                display: none;
+            }
+        }
     </style>
 
     <!-- Google tag (gtag.js) -->
@@ -68,11 +91,9 @@
         <div id="scoreBoard" class="hidden mt-4 text-lg text-gray-800">
             คะแนน: <span id="score">0</span>
         </div>
-        <div id="timer" class="hidden mt-2 text-lg text-red-600">เวลา: 60</div>
 
-        <!-- New buttons to navigate -->
-        <div id="gameControls" class=" mt-4 flex justify-around">
-            <button id="goToMainButton" class="py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600">กลับไปที่หน้าหลัก</button>
+        <div id="gameControls" class="hidden mt-4 flex justify-around">
+            <button id="resetGameButton" class="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600">เริ่มใหม่</button>
             <button id="goToScoreboardButton" class="py-2 px-4 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">ไปที่สกอร์บอร์ด</button>
         </div>
     </div>
@@ -82,7 +103,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
         import { getFirestore, addDoc, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-
+    
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBskXtybhc67-hAXjQYcsXojF8btsGKY8M",
@@ -94,191 +115,215 @@
             appId: "1:379187167144:web:c4f0b4e4ce6dba6d54e79d",
             measurementId: "G-X9NHWE3WKE"
         };
-
-        // Initialize Firebase
+    
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
+    
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const playerForm = document.getElementById("playerForm");
         const scoreBoard = document.getElementById("scoreBoard");
         const scoreSpan = document.getElementById("score");
-        const timerDisplay = document.getElementById("timer");
         const gameControls = document.getElementById("gameControls");
-
+    
         let santaX = canvas.width / 2 - 25;
         let santaWidth = 50;
         let santaHeight = 50;
         let gifts = [];
+        let obstacles = [];
         let score = 0;
         let gameRunning = false;
+        let gameStartTime = null;
         let playerName = "";
         let playerBranch = "";
-        let countdownTime = 60;
-        let countdownInterval;
-
-        // Images
+    
         const santaImg = new Image();
-        santaImg.src = "/image/santa.svg"; // Santa image
-        const giftImages = ["/image/gift1.svg", "/image/gift2.svg", "/image/gift3.svg"]; // Gift images
+        santaImg.src = "/image/santa.svg";
+        const giftImages = ["/image/gift1.svg", "/image/gift2.svg", "/image/gift3.svg"];
         const loadedGifts = giftImages.map((src) => {
             const img = new Image();
             img.src = src;
             return img;
         });
-
-        // Start game
+        const obstacleImg = new Image();
+        obstacleImg.src = "/image/obstacle.svg";
+    
+        function showGameInstructions() {
+            Swal.fire({
+                title: 'วิธีเล่นเกม',
+                text: 'ลากนิ้วเพื่อควบคุมซานต้า รับของขวัญและหลบสิ่งกีดขวาง หากชนสิ่งกีดขวาง เกมจะจบ',
+                icon: 'info',
+                confirmButtonText: 'เริ่มเล่น'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    startGame();
+                }
+            });
+        }
+    
         function startGame() {
             playerName = document.getElementById("playerName").value.trim();
             playerBranch = document.getElementById("playerBranch").value;
-
+    
             if (!playerName || !playerBranch) {
-                alert("กรุณากรอกชื่อและเลือกสาขา");
+                Swal.fire('กรุณากรอกข้อมูล', 'กรุณากรอกชื่อและเลือกสาขา', 'warning');
                 return;
             }
-
+    
             playerForm.classList.add("hidden");
             scoreBoard.classList.remove("hidden");
-            timerDisplay.classList.remove("hidden");
+            gameControls.classList.remove("hidden");
+    
             gameRunning = true;
+            gameStartTime = new Date();
+    
             generateGifts();
-            startTimer();
+            generateObstacles();
             gameLoop();
         }
-
-        // Create gifts
+    
         function generateGifts() {
-            for (let i = 0; i < 5; i++) {
-                gifts.push({
-                    x: Math.random() * (canvas.width - 20),
-                    y: -Math.random() * 300,
-                    speed: 2 + Math.random() * 3,
-                    img: loadedGifts[Math.floor(Math.random() * loadedGifts.length)], // Random image
-                });
-            }
+            gifts = Array.from({ length: 7 }, () => ({
+                x: Math.random() * (canvas.width - 20),
+                y: -Math.random() * 300,
+                speed: 2 + Math.random() * 3,
+                img: loadedGifts[Math.floor(Math.random() * loadedGifts.length)]
+            }));
         }
-
-        // Draw Santa
+    
+        function generateObstacles() {
+            obstacles = Array.from({ length: 3 }, () => ({
+                x: Math.random() * (canvas.width - 30),
+                y: -Math.random() * 300,
+                speed: 3 + Math.random() * 2
+            }));
+        }
+    
         function drawSanta() {
             ctx.drawImage(santaImg, santaX, canvas.height - santaHeight, santaWidth, santaHeight);
         }
-
-        // Draw gifts
+    
         function drawGifts() {
             gifts.forEach((gift) => {
                 ctx.drawImage(gift.img, gift.x, gift.y, 20, 20);
             });
         }
-
-        // Update gifts
+    
+        function drawObstacles() {
+            obstacles.forEach((obstacle) => {
+                ctx.drawImage(obstacleImg, obstacle.x, obstacle.y, 30, 30);
+            });
+        }
+    
         function updateGifts() {
             gifts.forEach((gift) => {
                 gift.y += gift.speed;
-
-                // Collision detection
+                if (gift.y > canvas.height) {
+                    gift.y = -20;
+                    gift.x = Math.random() * (canvas.width - 20);
+                }
                 if (
-                    gift.y + 20 >= canvas.height - santaHeight &&
+                    gift.x < santaX + santaWidth &&
                     gift.x + 20 > santaX &&
-                    gift.x < santaX + santaWidth
+                    gift.y < canvas.height &&
+                    gift.y + 20 > canvas.height - santaHeight
                 ) {
                     score++;
-                    gift.y = -Math.random() * 300;
-                    gift.x = Math.random() * (canvas.width - 20);
-                    gift.img = loadedGifts[Math.floor(Math.random() * loadedGifts.length)]; // Randomize image
-                }
-
-                // Reset gift if out of bounds
-                if (gift.y > canvas.height) {
-                    gift.y = -Math.random() * 300;
+                    scoreSpan.textContent = score;
+                    gift.y = -20;
                     gift.x = Math.random() * (canvas.width - 20);
                 }
             });
         }
-
-        // Game loop
-        function gameLoop() {
-            if (!gameRunning) return;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            drawSanta();
-            drawGifts();
-            updateGifts();
-            scoreSpan.textContent = score;
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Touch controls
-        canvas.addEventListener("touchmove", (e) => {
-            const touchX = e.touches[0].clientX - canvas.offsetLeft;
-            santaX = touchX - santaWidth / 2;
-            santaX = Math.max(0, Math.min(canvas.width - santaWidth, santaX));
-        });
-
-        // End game
-        function endGame() {
-            gameRunning = false;
-            clearInterval(countdownInterval);
-            Swal.fire({
-                title: 'เกมจบ!',
-                text: `คุณได้คะแนน: ${score}`,
-                icon: 'success',
-                confirmButtonText: 'ตกลง'
-            });
-            saveScoreToFirestore();
-        }
-
-        // Save score to Firestore
-        async function saveScoreToFirestore() {
-            const fullname = playerName;
-            const major = playerBranch;
-
-            try {
-                // Save score to Firestore
-                await addDoc(collection(db, "game_scores"), {
-                    fullname: fullname,
-                    major: major,
-                    score: score,
-                    timestamp: new Date()
-                });
-
-                Swal.fire('สำเร็จ!', 'บันทึกคะแนนสำเร็จ!', 'success');
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                Swal.fire('ผิดพลาด!', 'ไม่สามารถบันทึกคะแนนได้', 'error');
-            }
-        }
-
-        // Start countdown timer
-        function startTimer() {
-            timerDisplay.textContent = `เวลา: ${countdownTime}`;
-            countdownInterval = setInterval(() => {
-                countdownTime--;
-                timerDisplay.textContent = `เวลา: ${countdownTime}`;
-                if (countdownTime <= 0) {
+    
+        function updateObstacles() {
+            obstacles.forEach((obstacle) => {
+                obstacle.y += obstacle.speed;
+                if (obstacle.y > canvas.height) {
+                    obstacle.y = -30;
+                    obstacle.x = Math.random() * (canvas.width - 30);
+                }
+                if (
+                    obstacle.x < santaX + santaWidth &&
+                    obstacle.x + 30 > santaX &&
+                    obstacle.y < canvas.height &&
+                    obstacle.y + 30 > canvas.height - santaHeight
+                ) {
                     endGame();
                 }
-            }, 1000);
+            });
         }
-
-        // Wait for DOM content to be loaded before attaching event
-        document.addEventListener("DOMContentLoaded", () => {
-            const startButton = document.getElementById("startGameButton");
-            startButton.addEventListener("click", startGame);
-
-            const goToMainButton = document.getElementById("goToMainButton");
-            goToMainButton.addEventListener("click", () => {
-                window.location.href = "/"; // Reload to go back to the main page
+    
+        function endGame() {
+            gameRunning = false;
+            const gameTime = Math.floor((new Date() - gameStartTime) / 1000);
+    
+            Swal.fire({
+                title: 'เกมจบแล้ว!',
+                text: `คุณได้คะแนน: ${score}\nเวลาที่เล่น: ${gameTime} วินาที`,
+                icon: 'success',
+                confirmButtonText: 'ตกลง'
+            }).then(async () => {
+                await saveScore(gameTime);
+                resetGame();
             });
-
-            const goToScoreboardButton = document.getElementById("goToScoreboardButton");
-            goToScoreboardButton.addEventListener("click", () => {
-                window.location.href = "/scoreboard"; // Navigate to the scoreboard page
+        }
+    
+        function saveScore(gameTime) {
+            return addDoc(collection(db, 'game_scores'), {
+                fullname: playerName,
+                major: playerBranch,
+                score: score,
+                playtime: gameTime,
+                timestamp: new Date()
+            }).catch((error) => {
+                console.error('Error saving score:', error);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกคะแนนได้', 'error');
             });
+        }
+    
+        function resetGame() {
+            santaX = canvas.width / 2 - 25;
+            gifts = [];
+            obstacles = [];
+            score = 0;
+            scoreSpan.textContent = score;
+            playerForm.classList.remove("hidden");
+            scoreBoard.classList.add("hidden");
+            gameControls.classList.add("hidden");
+        }
+    
+        function gameLoop() {
+            if (!gameRunning) return;
+    
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSanta();
+            drawGifts();
+            drawObstacles();
+            updateGifts();
+            updateObstacles();
+    
+            requestAnimationFrame(gameLoop);
+        }
+    
+        canvas.addEventListener("touchmove", (event) => {
+            if (event.touches.length > 0) {
+                const touch = event.touches[0];
+                const canvasRect = canvas.getBoundingClientRect();
+                santaX = touch.clientX - canvasRect.left - santaWidth / 2;
+                if (santaX < 0) santaX = 0;
+                if (santaX + santaWidth > canvas.width) santaX = canvas.width - santaWidth;
+            }
+        });
+    
+        document.getElementById("startGameButton").addEventListener("click", showGameInstructions);
+    
+        document.getElementById("resetGameButton").addEventListener("click", resetGame);
+    
+        document.getElementById("goToScoreboardButton").addEventListener("click", () => {
+            window.location.href = "/scoreboard.html";
         });
     </script>
+    
 </body>
-
 </html>
